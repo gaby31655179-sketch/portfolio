@@ -1,0 +1,25 @@
+{
+  "projects": [
+    {
+      "title": "TaiexAI投資網站",
+      "description": "作品名稱、簡介與檔案待加入。",
+      "url": "",
+      "file": "",
+      "image": ""
+    },
+    {
+      "title": "作品二",
+      "description": "作品名稱、簡介與檔案待加入。",
+      "url": "",
+      "file": "",
+      "image": ""
+    },
+    {
+      "title": "作品三",
+      "description": "作品名稱、簡介與檔案待加入。",
+      "url": "",
+      "file": "",
+      "image": ""
+    }
+  ]
+}

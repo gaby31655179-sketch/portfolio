@@ -1,0 +1,85 @@
+media:
+  - name: images
+    label: 作品圖片
+    input: uploads/images
+    output: /uploads/images
+    extensions: [png, jpg, jpeg, webp]
+    rename: safe
+  - name: documents
+    label: 履歷與作品檔案
+    input: uploads/documents
+    output: /uploads/documents
+    extensions: [pdf]
+    rename: safe
+content:
+  - name: projects
+    label: 作品
+    type: file
+    path: data/projects.json
+    format: json
+    fields:
+      - name: projects
+        label: 我的作品（可新增、刪除、排序）
+        type: object
+        list:
+          min: 0
+          max: 30
+          collapsible:
+            collapsed: true
+            summary: "{title}"
+        fields:
+          - name: title
+            label: 作品名稱
+            type: string
+            required: true
+          - name: description
+            label: 作品簡介
+            type: text
+          - name: image
+            label: 作品圖片
+            type: image
+            options:
+              media: images
+          - name: file
+            label: 作品 PDF（可直接上傳）
+            type: file
+            options:
+              media: documents
+              extensions: [pdf]
+          - name: url
+            label: 作品網址（有 PDF 時會同時顯示）
+            type: string
+  - name: resume
+    label: 履歷
+    type: file
+    path: data/resume.json
+    format: json
+    fields:
+      - name: name
+        label: 中文姓名
+        type: string
+        required: true
+      - name: englishName
+        label: 英文姓名
+        type: string
+      - name: education
+        label: 學歷
+        type: text
+      - name: research
+        label: 研究方向
+        type: text
+      - name: experience
+        label: 經歷
+        type: text
+      - name: skills
+        label: 技能
+        type: text
+      - name: email
+        label: 聯絡信箱
+        type: string
+      - name: resumeUrl
+        label: 履歷 PDF（可直接上傳）
+        type: file
+        options:
+          media: documents
+          extensions: [pdf]

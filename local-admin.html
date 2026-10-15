@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>編輯作品與履歷</title>
+<style>
+  :root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#101820;color:#edf0eb;font:14px/1.8 "Microsoft JhengHei",system-ui,sans-serif}a{color:#b7d6c6;text-decoration:none}button,input,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:wait}main{max-width:960px;margin:auto;padding:30px 22px 100px}header{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-bottom:28px}h1{font-size:27px;font-weight:600;margin:10px 0}h2{font-size:21px;font-weight:600;margin:0 0 20px}h3{font-size:16px;font-weight:600;margin:0}.muted{color:#a6b3b9}section{border:1px solid #ffffff18;background:#17222a;border-radius:12px;padding:27px;margin:22px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.wide{grid-column:1/-1}label{display:block;color:#c9d5d7}input,textarea{display:block;width:100%;margin-top:7px;padding:10px 12px;border:1px solid #ffffff25;border-radius:7px;background:#101820;color:#edf0eb}textarea{min-height:92px;resize:vertical}input[type=file]{padding:9px;font-size:12px}.button{display:inline-block;padding:9px 16px;border-radius:7px;border:1px solid #ffffff28;background:transparent;color:#b7d6c6}.primary{background:#b7d6c6;color:#16271f;border-color:#b7d6c6}.danger{color:#e4a9a9}.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}.project{border-top:1px solid #ffffff18;padding-top:22px;margin-top:22px}.project .grid{margin-top:18px}.file-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:9px;font-size:12px}.file-row a{overflow-wrap:anywhere}.preview{max-width:160px;max-height:90px;border-radius:6px;display:block;margin-top:10px}.savebar{position:fixed;bottom:0;left:0;right:0;background:#101820f5;border-top:1px solid #ffffff18;padding:15px 22px;z-index:10;display:flex;align-items:center;justify-content:center;gap:20px}.status{color:#a6b3b9;font-size:13px}.status.error{color:#f1b1ad}.status.success{color:#b7d6c6}.small{font-size:12px}a:focus-visible,button:focus-visible{outline:2px solid #b7d6c6;outline-offset:4px}.button[hidden]{display:none}@media(max-width:650px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}section{padding:20px}header{align-items:flex-start;flex-direction:column}.savebar{justify-content:space-between;gap:10px}.status{max-width:65%}}
+</style></head>
+<body><main><header><div><a href="/">← 回到網站</a><h1>編輯作品與履歷</h1><p class="muted">填寫內容後，按「儲存變更」即可更新網站。</p></div><a class="button" href="/" target="_blank" rel="noopener">查看網站 ↗</a></header>
+<form id="editor"><fieldset id="fields" disabled style="border:0;padding:0;margin:0">
+<section><h2>履歷</h2><div class="grid">
+<label>中文姓名<input name="name" maxlength="200" required></label><label>英文姓名<input name="englishName" maxlength="200"></label>
+<label>學歷<textarea name="education"></textarea></label><label>研究方向<textarea name="research"></textarea></label>
+<label>經歷<textarea name="experience"></textarea></label><label>技能<textarea name="skills"></textarea></label>
+<label class="wide">聯絡信箱<input name="email" type="email"></label>
+<div class="wide"><label>履歷 PDF<input id="resume-upload" type="file" accept="application/pdf,.pdf"></label><div id="resume-file"></div><p class="muted small">支援 8 MB 以下的 PDF。上傳後記得儲存變更。</p></div>
+</div></section>
+<section><div class="toolbar"><h2 style="margin:0">作品</h2><button class="button" type="button" id="add-project">＋ 新增作品</button></div><div id="project-list"></div></section>
+</fieldset><div class="savebar"><span class="status" id="status" role="status" aria-live="polite">正在讀取資料…</span><button class="button primary" type="submit" id="save" disabled>儲存變更</button><button class="button" type="button" id="retry" hidden>重試讀取</button></div></form>
+<noscript>請啟用 JavaScript 使用編輯功能。</noscript></main>
+<script>
+  'use strict';
+  const $=s=>document.querySelector(s),escapeHTML=v=>String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  let state={profile:{},projects:[]},dirty=false,busy=false,loaded=false;
+  function status(text,type=''){ $('#status').textContent=text;$('#status').className='status '+type; }
+  function markDirty(){dirty=true;status('有尚未儲存的變更');}
+  function setBusy(value){busy=value;$('#fields').disabled=value||!loaded;$('#save').disabled=value||!loaded;$('#save').textContent=value?'處理中…':loaded?'儲存變更':'尚未連線';}
+  async function api(url,options={}){
+    if(location.protocol==='file:')throw new Error('請使用 http://127.0.0.1:4173/admin/ 開啟編輯頁面');
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);
+    try{
+      const response=await fetch(url,{...options,cache:'no-store',signal:controller.signal,headers:{...(options.body?{'Content-Type':'application/json'}:{}),...options.headers}});
+      const data=await response.json();if(!response.ok)throw new Error(data.error||'操作失敗');return data;
+    }catch(error){
+      if(error.name==='AbortError'||error instanceof TypeError)throw new Error('無法連接本機服務。請確認「啟動網站」視窗仍開著，再按重試讀取。');
+      throw error;
+    }finally{clearTimeout(timer);}
+  }
+  function usableURL(value){if(typeof value!=='string'||!value)return '';try{const url=new URL(value,location.href);return ['http:','https:'].includes(url.protocol)?url.href:'';}catch{return '';}}
+  function fileUI(value,kind,index){const url=usableURL(value);if(!url)return '<span class="muted small">尚未上傳</span>';return `<div class="file-row"><a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer">${kind==='image'?'查看圖片':'查看 PDF'} ↗</a><button class="button" type="button" data-action="clear" data-kind="${kind}" data-index="${index}">移除連結</button></div>${kind==='image'?`<img class="preview" src="${escapeHTML(url)}" alt="作品圖片預覽">`:''}`;}
+  function renderFiles(){ $('#resume-file').innerHTML=fileUI(state.profile.resumeUrl,'resume',-1); }
+  function renderProjects(){
+    $('#project-list').innerHTML=state.projects.map((p,i)=>`<article class="project" data-index="${i}"><div class="toolbar"><h3>作品 ${i+1}</h3><div><button class="button" type="button" data-action="up" data-index="${i}" ${i===0?'disabled':''}>上移</button> <button class="button" type="button" data-action="down" data-index="${i}" ${i===state.projects.length-1?'disabled':''}>下移</button> <button class="button danger" type="button" data-action="remove" data-index="${i}">移除作品</button></div></div><div class="grid"><label class="wide">作品名稱<input data-field="title" value="${escapeHTML(p.title)}" required maxlength="200"></label><label class="wide">作品簡介<textarea data-field="description">${escapeHTML(p.description)}</textarea></label><label class="wide">作品網址（選填）<input data-field="url" type="url" value="${escapeHTML(p.url)}" placeholder="https://"></label><div><label>作品圖片<input type="file" data-upload="image" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"></label>${fileUI(p.image,'image',i)}</div><div><label>作品 PDF<input type="file" data-upload="file" accept="application/pdf,.pdf"></label>${fileUI(p.file,'file',i)}</div></div></article>`).join('')||'<p class="muted" style="margin-top:20px">還沒有作品，按「新增作品」即可加入。</p>';
+    $('#add-project').disabled=state.projects.length>=30;
+  }
+  async function load(){
+    if(busy)return;
+    setBusy(true);$('#retry').hidden=true;
+    try{
+      const content=await api('/api/content');
+      if(!content.profile||!Array.isArray(content.projects))throw new Error('資料格式不正確，請重新啟動本機服務');
+      state=content;
+      for(const field of ['name','englishName','education','research','experience','skills','email'])$('#editor').elements[field].value=state.profile[field]||'';
+      renderFiles();renderProjects();loaded=true;dirty=false;status('已讀取本機資料');
+    }catch(error){status('無法讀取：'+error.message,'error');$('#retry').hidden=false;}
+    finally{setBusy(false);}
+  }
+  function base64(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(new Error('檔案讀取失敗'));reader.readAsDataURL(file);});}
+  async function upload(file,kind,index){if(!file)return;if(file.size>8*1024*1024){status('檔案太大，請選擇 8 MB 以下的檔案','error');return;}setBusy(true);status('正在上傳 '+file.name+'…');try{const result=await api('/api/upload',{method:'POST',body:JSON.stringify({name:file.name,base64:await base64(file)})});if(kind==='resume')state.profile.resumeUrl=result.path;else state.projects[index][kind]=result.path;renderFiles();renderProjects();markDirty();status('檔案已上傳，請儲存變更');}catch(error){status(error.message,'error');}finally{setBusy(false);}}
+  $('#editor').addEventListener('input',event=>{const field=event.target.dataset.field;if(field){state.projects[Number(event.target.closest('[data-index]').dataset.index)][field]=event.target.value;}else if(event.target.name){state.profile[event.target.name]=event.target.value;}else return;markDirty();});
+  $('#resume-upload').addEventListener('change',event=>{upload(event.target.files[0],'resume',-1);event.target.value='';});
+  $('#project-list').addEventListener('change',event=>{if(event.target.dataset.upload)upload(event.target.files[0],event.target.dataset.upload,Number(event.target.closest('[data-index]').dataset.index));});
+  $('#add-project').addEventListener('click',()=>{if(state.projects.length>=30)return;state.projects.push({title:'',description:'',url:'',file:'',image:''});renderProjects();markDirty();$('#project-list').lastElementChild.querySelector('input').focus();});
+  $('#editor').addEventListener('click',event=>{const button=event.target.closest('[data-action]');if(!button)return;const index=Number(button.dataset.index),action=button.dataset.action;if(action==='clear'){if(button.dataset.kind==='resume')state.profile.resumeUrl='';else state.projects[index][button.dataset.kind]='';}else if(action==='remove')state.projects.splice(index,1);else {const next=index+(action==='up'?-1:1);if(next<0||next>=state.projects.length)return;[state.projects[index],state.projects[next]]=[state.projects[next],state.projects[index]];}renderFiles();renderProjects();markDirty();});
+  $('#editor').addEventListener('submit',async event=>{event.preventDefault();if(busy)return;setBusy(true);status('正在儲存…');try{const result=await api('/api/save',{method:'POST',body:JSON.stringify(state)});state={profile:result.profile,projects:result.projects};dirty=false;status('已儲存，網站已更新！','success');}catch(error){status('儲存失敗：'+error.message,'error');}finally{setBusy(false);}});
+  $('#retry').addEventListener('click',load);
+  window.addEventListener('beforeunload',event=>{if(dirty||busy){event.preventDefault();event.returnValue='';}});
+  load();
+</script></body></html>
