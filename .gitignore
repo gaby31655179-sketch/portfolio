@@ -1,4 +1,5 @@
 _site/
+.local-tools/
 node_modules/
 .env
 .env.*

@@ -1,4 +1,8 @@
-# 作品與履歷：本機編輯版
+# 作品與履歷網站
+
+公開網站：https://gaby31655179-sketch.github.io/portfolio/
+
+線上管理入口：https://gaby31655179-sketch.github.io/portfolio/admin/
 
 ## 怎麼開啟
 
@@ -42,15 +46,15 @@
 
 https://github.com/gaby31655179-sketch/portfolio
 
-儲存庫保留私人設定，尚未發布到公開網路。本機按儲存會更新此資料夾，並不會自動同步 GitHub。
+經帳號擁有者同意，儲存庫與網站已設定公開發布。本機按儲存會更新此資料夾，並不會自動同步 GitHub。
 
-GitHub Pages 與 Pages CMS 的設定仍保留，之後要上線時可繼續使用。
+GitHub Pages 透過 GitHub Actions 發布，Pages CMS 提供需授權的線上內容編輯表單。
 
-## 日後公開上線與線上編輯
+## 線上發布與編輯
 
-確認網站內容可以公開後，依 GitHub 方案設定 Pages（GitHub Free 通常需要公開儲存庫）。到 Settings → Pages，將 Source 設為 GitHub Actions；再到 Settings → Secrets and variables → Actions → Variables，新增 `ENABLE_PAGES`，值填 `true`，並執行 Check and publish portfolio 工作流程。
+已將 Settings → Pages 的 Source 設為 GitHub Actions，並設定 Actions Variable `ENABLE_PAGES=true`。之後更新 main 分支時，Check and publish portfolio 工作流程會檢查並發布網站。
 
-上線前工作流程只檢查網站，不會嘗試部署。
+若需暫停後續發布，可把 `ENABLE_PAGES` 改為 `false`；這只停止後續發布，不會移除已上線的網站。
 
 GitHub Pages 為靜態網站，不會執行本機的 `server.cjs`。目前的首頁點選編輯功能由本機服務提供；線上版使用網站頁尾的「管理內容」進入 Pages CMS，登入 GitHub 並授權此儲存庫後，以「作品」與「履歷」表單編輯。儲存到 main 分支後，GitHub Actions 會更新公開網站。
 
